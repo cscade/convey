@@ -5,9 +5,7 @@
 */
 /*global describe:true, it:true, beforeEach:true, afterEach:true */
 
-var server = 'http://fire-dev:5984';
-
-if (process.env.NODE_ENV === 'travis') server = 'http://127.0.0.1:5984'; // Travis-CI Support
+var server = process.env.COUCH || 'http://localhost:5984';
 
 var assert = require('assert'),
 	nano = require('nano')(server),
