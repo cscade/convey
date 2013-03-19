@@ -7,6 +7,8 @@
 
 var server = 'http://fire-dev:5984';
 
+if (process.env.NODE_ENV === 'travis') server = 'http://127.0.0.1:5984'; // Travis-CI Support
+
 var assert = require('assert'),
 	nano = require('nano')(server),
 	path = require('path'),
