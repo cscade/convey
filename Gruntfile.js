@@ -24,11 +24,21 @@ module.exports = function (grunt) {
 			convey: [
 				'index.js'
 			]
+		},
+		// Watch.
+		watch: {
+			jshint: {
+				files: [
+					'index.js'
+				],
+				tasks: ['jshint:convey']
+			}
 		}
 	});
 	
 	// Dependecies.
 	grunt.loadNpmTasks('grunt-contrib-jshint');
+	grunt.loadNpmTasks('grunt-contrib-watch');
 	
 	// Tasks.
 	grunt.registerTask('default', ['jshint:grunt', 'jshint:convey']);
