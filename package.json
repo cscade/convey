@@ -4,7 +4,7 @@
   "description": "A CouchDB design babysitter and automated document converter. Automate document changes with application version.",
   "main": "index.js",
   "scripts": {
-    "test": "mocha test/index.js -R spec"
+    "test": "mocha test/index.js -R list"
   },
   "repository": {
     "type": "git",
