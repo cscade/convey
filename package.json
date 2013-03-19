@@ -4,7 +4,7 @@
   "description": "A CouchDB design babysitter and automated document converter. Automate document changes with application version.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha test/index.js -R spec"
   },
   "repository": {
     "type": "git",
@@ -23,11 +23,13 @@
   "license": "MIT",
   "dependencies": {
     "semver": "~1.1.4",
-    "async": "~0.2.6"
+    "async": "~0.2.6",
+    "nano": "~3.3.8"
   },
   "devDependencies": {
     "grunt": "~0.4.1",
     "grunt-contrib-jshint": "~0.3.0",
-    "grunt-contrib-watch": "~0.3.1"
+    "grunt-contrib-watch": "~0.3.1",
+    "mocha": "~1.8.2"
   }
 }

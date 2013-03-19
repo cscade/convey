@@ -13,6 +13,7 @@ module.exports = function (grunt) {
 				newcap: true,
 				noarg: true,
 				undef: true,
+				unused: true,
 				// Relax.
 				boss: true,
 				smarttabs: true,
@@ -22,14 +23,18 @@ module.exports = function (grunt) {
 				'Gruntfile.js'
 			],
 			convey: [
-				'index.js'
+				'index.js',
+				'lib/**/*.js',
+				'test/**/*.js'
 			]
 		},
 		// Watch.
 		watch: {
 			jshint: {
 				files: [
-					'index.js'
+					'index.js',
+					'lib/**/*.js',
+					'test/**/*.js'
 				],
 				tasks: ['jshint:convey']
 			}
