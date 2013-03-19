@@ -20,5 +20,13 @@
     "version"
   ],
   "author": "Carson S. Christian <cscade@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "semver": "~1.1.4",
+    "async": "~0.2.6"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-jshint": "~0.3.0"
+  }
 }
