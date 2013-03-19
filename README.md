@@ -12,3 +12,4 @@ npm install convey
 
 ## Usage
 
+WIP! Don't use quite yet.
