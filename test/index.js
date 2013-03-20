@@ -62,15 +62,15 @@ describe('Events:', function () {
 	});
 	
 	// Tests.
-	it('should emit a `check-start` event at the beginning of a check pass', function (done) {
+	it('should emit a `start` event at the beginning of a check pass', function (done) {
 		events = 0;
-		convey.on('check-start', function (details) {
+		convey.on('start', function (details) {
 			assert.equal(details.couch, server);
 			assert.equal(details.version, version);
 			assert.equal(details.config.toString(), '[object Object]');
 			events++;
 		});
-		convey.on('check-done', function () {
+		convey.on('done', function () {
 			assert.equal(events, 1);
 			done();
 		});
@@ -83,7 +83,7 @@ describe('Events:', function () {
 			assert.equal(details.resources.toString(), '[object Object]');
 			events++;
 		});
-		convey.on('check-done', function () {
+		convey.on('done', function () {
 			assert.equal(events, 1);
 			done();
 		});
@@ -95,7 +95,7 @@ describe('Events:', function () {
 			assert.equal(message, 'test-convey');
 			events++;
 		});
-		convey.on('check-done', function () {
+		convey.on('done', function () {
 			assert.equal(events, 1);
 			done();
 		});
@@ -107,7 +107,7 @@ describe('Events:', function () {
 			assert.equal(resource, 'test');
 			events++;
 		});
-		convey.on('check-done', function () {
+		convey.on('done', function () {
 			assert.equal(events, 1);
 			done();
 		});
@@ -119,7 +119,7 @@ describe('Events:', function () {
 			assert.equal(resource, 'test');
 			events++;
 		});
-		convey.on('check-done', function () {
+		convey.on('done', function () {
 			assert.equal(events, 1);
 			done();
 		});
@@ -131,7 +131,7 @@ describe('Events:', function () {
 			assert.equal(resource, 'test');
 			events++;
 		});
-		convey.on('check-done', function () {
+		convey.on('done', function () {
 			assert.equal(events, 1);
 			done();
 		});
@@ -143,14 +143,14 @@ describe('Events:', function () {
 			assert.equal(details.database, 'test-convey');
 			events++;
 		});
-		convey.on('check-done', function () {
+		convey.on('done', function () {
 			assert.equal(events, 1);
 			done();
 		});
 		convey.check(server, version, path.join(__dirname, 'configs/single.json'));
 	});
-	it('should emit a `check-done` event at the end of a check pass', function (done) {
-		convey.on('check-done', done);
+	it('should emit a `done` event at the end of a check pass', function (done) {
+		convey.on('done', done);
 		convey.check(server, version, path.join(__dirname, 'configs/single.json'));
 	});
 	it('should not emit a `resource-updated` event if work did not need to be done', function (done) {
@@ -159,7 +159,7 @@ describe('Events:', function () {
 			// This event should not fire, since we are passing a version of 0.0.0
 			events++;
 		});
-		convey.on('check-done', function () {
+		convey.on('done', function () {
 			assert.equal(events, 0);
 			done();
 		});
