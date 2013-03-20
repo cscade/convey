@@ -76,9 +76,9 @@ describe('Events:', function () {
 		});
 		convey.check(server, version, path.join(__dirname, 'configs/single.json'));
 	});
-	it('should emit a `database-start` event at the beginning of examining a database', function (done) {
+	it('should emit a `database:start` event at the beginning of examining a database', function (done) {
 		events = 0;
-		convey.on('database-start', function (details) {
+		convey.on('database:start', function (details) {
 			assert.equal(details.database, 'test-convey');
 			assert.equal(details.resources.toString(), '[object Object]');
 			events++;
@@ -101,9 +101,9 @@ describe('Events:', function () {
 		});
 		convey.check(server, version, path.join(__dirname, 'configs/single.json'));
 	});
-	it('should emit a `resource-fresh` event when a resource is up to date', function (done) {
+	it('should emit a `resource:fresh` event when a resource is up to date', function (done) {
 		events = 0;
-		convey.on('resource-fresh', function (resource) {
+		convey.on('resource:fresh', function (resource) {
 			assert.equal(resource, 'test');
 			events++;
 		});
@@ -113,9 +113,9 @@ describe('Events:', function () {
 		});
 		convey.check(server, version, path.join(__dirname, 'configs/single.json'));
 	});
-	it('should emit a `resource-stale` event when a resource needs updating', function (done) {
+	it('should emit a `resource:stale` event when a resource needs updating', function (done) {
 		events = 0;
-		convey.on('resource-stale', function (resource) {
+		convey.on('resource:stale', function (resource) {
 			assert.equal(resource, 'test');
 			events++;
 		});
@@ -125,9 +125,9 @@ describe('Events:', function () {
 		});
 		convey.check(server, '0.0.1', path.join(__dirname, 'configs/single.json'));
 	});
-	it('should emit a `resource-updated` event after a resource was updated', function (done) {
+	it('should emit a `resource:updated` event after a resource was updated', function (done) {
 		events = 0;
-		convey.on('resource-updated', function (resource) {
+		convey.on('resource:updated', function (resource) {
 			assert.equal(resource, 'test');
 			events++;
 		});
@@ -137,9 +137,9 @@ describe('Events:', function () {
 		});
 		convey.check(server, '0.0.1', path.join(__dirname, 'configs/single.json'));
 	});
-	it('should emit a `database-done` event when done examining a database', function (done) {
+	it('should emit a `database:done` event when done examining a database', function (done) {
 		events = 0;
-		convey.on('database-done', function (details) {
+		convey.on('database:done', function (details) {
 			assert.equal(details.database, 'test-convey');
 			events++;
 		});
@@ -153,9 +153,9 @@ describe('Events:', function () {
 		convey.on('done', done);
 		convey.check(server, version, path.join(__dirname, 'configs/single.json'));
 	});
-	it('should not emit a `resource-updated` event if work did not need to be done', function (done) {
+	it('should not emit a `resource:updated` event if work did not need to be done', function (done) {
 		events = 0;
-		convey.on('resource-updated', function (resource) {
+		convey.on('resource:updated', function (resource) {
 			// This event should not fire, since we are passing a version of 0.0.0
 			events++;
 		});
