@@ -155,7 +155,7 @@ describe('Events:', function () {
 	});
 	it('should not emit a `resource:updated` event if work did not need to be done', function (done) {
 		events = 0;
-		convey.on('resource:updated', function (resource) {
+		convey.on('resource:updated', function () {
 			// This event should not fire, since we are passing a version of 0.0.0
 			events++;
 		});

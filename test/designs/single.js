@@ -1,3 +1,4 @@
+/*jshint couch:true */
 // Updates to convey.
 exports.convey = function (done) {
 	done();
