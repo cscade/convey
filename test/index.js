@@ -132,6 +132,20 @@ describe('Events:', function () {
 		});
 		convey.check(server, '0.0.1', path.join(__dirname, 'configs/empty.json'));
 	});
+	it('should emit a `resource:stale` event when a resource does not need updating but check() ran with force = true', function (done) {
+		events = 0;
+		convey.on('resource:stale', function (resource) {
+			assert.equal(resource.database, 'test-convey');
+			assert.equal(resource.resource, 'test');
+			assert.equal(resource.forced, true);
+			events++;
+		});
+		convey.on('done', function () {
+			assert.equal(events, 1);
+			done();
+		});
+		convey.check(server, version, path.join(__dirname, 'configs/empty.json'), true);
+	});
 	it('should emit a `resource:updated` event after a resource was updated', function (done) {
 		events = 0;
 		convey.on('resource:updated', function (resource) {
