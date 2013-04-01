@@ -1,0 +1,5 @@
+{
+	"test-convey": {
+		"test": "test/designs/empty"
+	}
+}
