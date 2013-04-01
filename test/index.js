@@ -86,7 +86,6 @@ describe('Events:', function () {
 		events = 0;
 		convey.on('database:start', function (details) {
 			assert.equal(details.database, 'test-convey');
-			assert.equal(details.resources.toString(), '[object Object]');
 			events++;
 		});
 		convey.on('done', function () {
