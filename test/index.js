@@ -52,7 +52,7 @@ describe('Events:', function () {
 	var convey, db, events,
 		version = '0.0.0';
 	
-	// Test db setup and tear down.
+	// Reset database before each.
 	beforeEach(function (done) {
 		nano.db.destroy('test-convey', function () {
 			nano.db.create('test-convey', function (e) {
@@ -178,7 +178,7 @@ describe('Events:', function () {
 describe('version awareness', function () {
 	var db, convey;
 	
-	// Test db setup and tear down.
+	// Reset database only once.
 	before(function (done) {
 		nano.db.destroy('test-convey', function () {
 			nano.db.create('test-convey', function (e) {
@@ -255,4 +255,92 @@ describe('version awareness', function () {
 			done(e);
 		});
 	});
+	it('should ignore databases with a newer convey version', function (done) {
+		var untouched = 0, fresh = 0, stale = 0;
+		
+		convey = new Convey();
+		convey.on('untouched', function () {
+			untouched++;
+		});
+		convey.on('resource:fresh', function () {
+			fresh++;
+		});
+		convey.on('resource:stale', function () {
+			stale++;
+		});
+		convey.on('done', function () {
+			assert.equal(untouched, 0);
+			assert.equal(fresh, 1);
+			assert.equal(stale, 0);
+			done();
+		});
+		convey.check(server, '0.0.1', path.join(__dirname, 'configs/empty.json'));
+	});
+});
+/*
+	Design creation and updating.
+*/
+describe('designs', function () {
+	var convey, db, firstRev;
+	
+	// Reset database only once.
+	before(function (done) {
+		nano.db.destroy('test-convey', function () {
+			nano.db.create('test-convey', function (e) {
+				db = dbRef();
+				done(e);
+			});
+		});
+	});
+	after(function (done) {
+		nano.db.destroy('test-convey', done);
+	});
+	
+	it('should be published when available', function (done) {
+		convey = new Convey();
+		convey.on('done', function () {
+			db.view('single', 'allTheThings', function (e, body) {
+				if (e) return done(e);
+				assert.equal(body.total_rows, 0);
+				db.get('_design/single', function (e, design) {
+					firstRev = design._rev;
+					done(e);
+				});
+			});
+		});
+		convey.check(server, '0.0.1', path.join(__dirname, 'configs/single.json'));
+	});
+	it('should not be updated if the database is already fresh', function (done) {
+		convey = new Convey();
+		convey.on('done', function () {
+			db.get('_design/single', function (e, design) {
+				assert.equal(design._rev, firstRev);
+				done(e);
+			});
+		});
+		convey.check(server, '0.0.1', path.join(__dirname, 'configs/single.json'));
+	});
+	it('should be updated silently if the database is not fresh', function (done) {
+		convey = new Convey();
+		convey.on('done', function () {
+			db.get('_design/single', function (e, design) {
+				assert.notEqual(design._rev, firstRev);
+				done(e);
+			});
+		});
+		convey.check(server, '0.0.2', path.join(__dirname, 'configs/single.json'));
+	});
+});
+/*
+	Document updates.
+*/
+describe('document updates', function () {
+	it('should update matching documents');
+	it('should ignore non-matching documents');
+});
+/*
+	Document creation.
+*/
+describe('document creation', function () {
+	it('should create new documents as instructed');
 });
