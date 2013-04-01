@@ -172,7 +172,10 @@ describe('Events:', function () {
 		convey.check(server, version, 'test/configs/empty.json');
 	});
 	it('should emit a `done` event at the end of a check pass', function (done) {
-		convey.on('done', done);
+		convey.on('done', function (info) {
+			assert.equal(typeof info.duration, 'number');
+			done();
+		});
 		convey.check(server, version, 'test/configs/empty.json');
 	});
 	it('should not emit a `resource:done` event if work did not need to be done', function (done) {
