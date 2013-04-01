@@ -86,7 +86,6 @@ describe('Events:', function () {
 		events = 0;
 		convey.on('database:start', function (details) {
 			assert.equal(details.database, 'test-convey');
-			assert.equal(details.resources.toString(), '[object Object]');
 			events++;
 		});
 		convey.on('done', function () {
@@ -97,8 +96,8 @@ describe('Events:', function () {
 	});
 	it('should emit a `untouched` event when a database has never been updated', function (done) {
 		events = 0;
-		convey.on('untouched', function (message) {
-			assert.equal(message, 'test-convey');
+		convey.on('untouched', function (resource) {
+			assert.equal(resource.database, 'test-convey');
 			events++;
 		});
 		convey.on('done', function () {
@@ -110,7 +109,8 @@ describe('Events:', function () {
 	it('should emit a `resource:fresh` event when a resource is up to date', function (done) {
 		events = 0;
 		convey.on('resource:fresh', function (resource) {
-			assert.equal(resource, 'test');
+			assert.equal(resource.database, 'test-convey');
+			assert.equal(resource.resource, 'test');
 			events++;
 		});
 		convey.on('done', function () {
@@ -122,7 +122,8 @@ describe('Events:', function () {
 	it('should emit a `resource:stale` event when a resource needs updating', function (done) {
 		events = 0;
 		convey.on('resource:stale', function (resource) {
-			assert.equal(resource, 'test');
+			assert.equal(resource.database, 'test-convey');
+			assert.equal(resource.resource, 'test');
 			events++;
 		});
 		convey.on('done', function () {
@@ -131,10 +132,25 @@ describe('Events:', function () {
 		});
 		convey.check(server, '0.0.1', path.join(__dirname, 'configs/empty.json'));
 	});
+	it('should emit a `resource:stale` event when a resource does not need updating but check() ran with force = true', function (done) {
+		events = 0;
+		convey.on('resource:stale', function (resource) {
+			assert.equal(resource.database, 'test-convey');
+			assert.equal(resource.resource, 'test');
+			assert.equal(resource.forced, true);
+			events++;
+		});
+		convey.on('done', function () {
+			assert.equal(events, 1);
+			done();
+		});
+		convey.check(server, version, path.join(__dirname, 'configs/empty.json'), true);
+	});
 	it('should emit a `resource:updated` event after a resource was updated', function (done) {
 		events = 0;
 		convey.on('resource:updated', function (resource) {
-			assert.equal(resource.name, 'test');
+			assert.equal(resource.database, 'test-convey');
+			assert.equal(resource.resource, 'test');
 			events++;
 		});
 		convey.on('done', function () {
@@ -397,5 +413,50 @@ describe('document updates', function () {
 			});
 			convey.check(server, '0.0.2', path.join(__dirname, 'configs/document_updates.json'));
 		});
+	});
+});
+/*
+	Custom `convey-version` document properties.
+*/
+describe('custom properties on convey-version document', function () {
+	var convey, db;
+	
+	// Reset database only once.
+	before(function (done) {
+		nano.db.create('test-convey-custom-properties', function (e) {
+			db = nano.db.use('test-convey-custom-properties');
+			done(e);
+		});
+	});
+	after(function (done) {
+		nano.db.destroy('test-convey-custom-properties', done);
+	});
+	
+	it('should be supported', function (done) {
+		convey = new Convey({
+			extendDocument: {
+				happyTimeCustomKey: 'woot-worthy!',
+				versions: 'override this!' // `versions` is a reserved key, the next test ensures this custom key is overridden
+			}
+		});
+		convey.on('done', function () {
+			db.get('convey-version', function (e, doc) {
+				if (e) return done(e);
+				assert.equal(doc.happyTimeCustomKey, 'woot-worthy!');
+				done();
+			});
+		});
+		convey.check(server, '0.0.1', path.join(__dirname, 'configs/custom_properties.json'));
+	});
+	it('should not override built-in properties', function (done) {
+		convey = new Convey();
+		convey.on('done', function () {
+			db.get('convey-version', function (e, doc) {
+				if (e) return done(e);
+				assert.notEqual(doc.versions, 'override this!');
+				db.destroy(doc._id, doc._rev, done);
+			});
+		});
+		convey.check(server, '0.0.2', path.join(__dirname, 'configs/custom_properties.json'));
 	});
 });
