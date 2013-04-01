@@ -146,9 +146,9 @@ describe('Events:', function () {
 		});
 		convey.check(server, version, 'test/configs/empty.json', true);
 	});
-	it('should emit a `resource:updated` event after a resource was updated', function (done) {
+	it('should emit a `resource:done` event after a resource was updated', function (done) {
 		events = 0;
-		convey.on('resource:updated', function (resource) {
+		convey.on('resource:done', function (resource) {
 			assert.equal(resource.database, 'test-convey');
 			assert.equal(resource.resource, 'test');
 			events++;
@@ -175,9 +175,9 @@ describe('Events:', function () {
 		convey.on('done', done);
 		convey.check(server, version, 'test/configs/empty.json');
 	});
-	it('should not emit a `resource:updated` event if work did not need to be done', function (done) {
+	it('should not emit a `resource:done` event if work did not need to be done', function (done) {
 		events = 0;
-		convey.on('resource:updated', function () {
+		convey.on('resource:done', function () {
 			// This event should not fire, since we are passing a version of 0.0.0
 			events++;
 		});
@@ -372,7 +372,7 @@ describe('document updates', function () {
 			resource: 'thing'
 		}, function (e, body) {
 			if (e) return done(e);
-			convey.on('resource:updated', function (resource) {
+			convey.on('resource:done', function (resource) {
 				updates = resource.updated;
 				creates = resource.created;
 			});
