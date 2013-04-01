@@ -13,6 +13,13 @@ var assert = require('assert'),
 	Convey = require('../').Convey;
 
 /*
+	Convenience.
+*/
+var dbRef = function () {
+	return nano.db.use('test-convey');
+};
+
+/*
 	Configuration file handling.
 */
 describe('configure()', function () {
@@ -50,15 +57,14 @@ describe('Events:', function () {
 		nano.db.destroy('test-convey', function () {
 			nano.db.create('test-convey', function (e) {
 				if (e) return done(e);
-				db = nano.db.use('test-convey');
+				db = dbRef();
 				convey = new Convey();
 				done();
 			});
 		});
 	});
 	afterEach(function (done) {
-		nano.db.destroy('test-convey');
-		done();
+		nano.db.destroy('test-convey', done);
 	});
 	
 	// Tests.
@@ -167,8 +173,86 @@ describe('Events:', function () {
 	});
 });
 /*
-	Multiple Database updating (from a view).
+	Version document creation.
 */
-describe('multiple database updating', function () {
+describe('version awareness', function () {
+	var db, convey;
 	
+	// Test db setup and tear down.
+	before(function (done) {
+		nano.db.destroy('test-convey', function () {
+			nano.db.create('test-convey', function (e) {
+				db = dbRef();
+				done(e);
+			});
+		});
+	});
+	after(function (done) {
+		nano.db.destroy('test-convey', done);
+	});
+	
+	it('should know a new database was untouched', function (done) {
+		var untouched = 0, stale = 0;
+		
+		convey = new Convey();
+		convey.on('untouched', function () {
+			untouched++;
+		});
+		convey.on('resource:stale', function () {
+			stale++;
+		});
+		convey.on('done', function () {
+			assert.equal(untouched, 1);
+			assert.equal(stale, 1);
+			done();
+		});
+		convey.check(server, '0.0.1', path.join(__dirname, 'configs/empty.json'));
+	});
+	it('should create a new version document after the first run', function (done) {
+		db.get('convey-version', done);
+	});
+	it('should not take any action on a consecutive run with no version change', function (done) {
+		var untouched = 0, fresh = 0, stale = 0;
+		
+		convey = new Convey();
+		convey.on('untouched', function () {
+			untouched++;
+		});
+		convey.on('resource:fresh', function () {
+			fresh++;
+		});
+		convey.on('resource:stale', function () {
+			stale++;
+		});
+		convey.on('done', function () {
+			assert.equal(untouched, 0);
+			assert.equal(fresh, 1);
+			assert.equal(stale, 0);
+			done();
+		});
+		convey.check(server, '0.0.1', path.join(__dirname, 'configs/empty.json'));
+	});
+	it('should take action on a consecutive run after a version change', function (done) {
+		var fresh = 0, stale = 0;
+		
+		convey = new Convey();
+		convey.on('resource:fresh', function () {
+			fresh++;
+		});
+		convey.on('resource:stale', function () {
+			stale++;
+		});
+		convey.on('done', function () {
+			assert.equal(fresh, 0);
+			assert.equal(stale, 1);
+			done();
+		});
+		convey.check(server, '0.0.2', path.join(__dirname, 'configs/empty.json'));
+	});
+	it('should update the version document after the consecutive run', function (done) {
+		db.get('convey-version', function (e, doc) {
+			assert.equal(doc.versions.test, '0.0.2');
+			done(e);
+		});
+	});
 });
