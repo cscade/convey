@@ -1,0 +1,5 @@
+{
+	"test-convey-document-updates": {
+		"test": "test/designs/document_updates"
+	}
+}

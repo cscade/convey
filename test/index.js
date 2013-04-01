@@ -134,7 +134,7 @@ describe('Events:', function () {
 	it('should emit a `resource:updated` event after a resource was updated', function (done) {
 		events = 0;
 		convey.on('resource:updated', function (resource) {
-			assert.equal(resource, 'test');
+			assert.equal(resource.name, 'test');
 			events++;
 		});
 		convey.on('done', function () {
@@ -335,12 +335,67 @@ describe('designs', function () {
 	Document updates.
 */
 describe('document updates', function () {
-	it('should update matching documents');
-	it('should ignore non-matching documents');
-});
-/*
-	Document creation.
-*/
-describe('document creation', function () {
-	it('should create new documents as instructed');
+	var convey, db;
+	
+	// Reset database only once.
+	before(function (done) {
+		nano.db.create('test-convey-document-updates', function (e) {
+			db = nano.db.use('test-convey-document-updates');
+			done(e);
+		});
+	});
+	after(function (done) {
+		nano.db.destroy('test-convey-document-updates', done);
+	});
+	
+	it('should update and/or create matching documents', function (done) {
+		var updates, creates;
+		
+		convey = new Convey();
+		db.insert({
+			resource: 'thing'
+		}, function (e, body) {
+			if (e) return done(e);
+			convey.on('resource:updated', function (resource) {
+				updates = resource.updated;
+				creates = resource.created;
+			});
+			convey.on('done', function () {
+				db.get(body.id, function (e, thing) {
+					if (e) return done(e);
+					assert.equal(thing.foo, 'bar');
+					assert.equal(updates, 1);
+					assert.equal(creates, 1);
+					db.view('single', 'allTheRelatedThings', { key: thing._id, include_docs: true }, function (e, body) {
+						var relatedThing;
+						
+						if (e) return done(e);
+						relatedThing = body.rows[0].doc;
+						assert.equal(relatedThing.relatesTo, thing._id);
+						db.destroy(relatedThing._id, relatedThing._rev, function (e) {
+							if (e) return done(e);
+							db.destroy(thing._id, thing._rev, done);
+						});
+					});
+				});
+			});
+			convey.check(server, '0.0.1', path.join(__dirname, 'configs/document_updates.json'));
+		});
+	});
+	it('should ignore non-matching documents', function (done) {
+		convey = new Convey();
+		db.insert({
+			resource: 'cat'
+		}, function (e, body) {
+			if (e) return done(e);
+			convey.on('done', function () {
+				db.get(body.id, function (e, cat) {
+					if (e) return done(e);
+					assert.equal(typeof cat.foo, 'undefined');
+					db.destroy(cat._id, cat._rev, done);
+				});
+			});
+			convey.check(server, '0.0.2', path.join(__dirname, 'configs/document_updates.json'));
+		});
+	});
 });
