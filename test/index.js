@@ -399,3 +399,48 @@ describe('document updates', function () {
 		});
 	});
 });
+/*
+	Custom `convey-version` document properties.
+*/
+describe('custom properties on convey-version document', function () {
+	var convey, db;
+	
+	// Reset database only once.
+	before(function (done) {
+		nano.db.create('test-convey-custom-properties', function (e) {
+			db = nano.db.use('test-convey-custom-properties');
+			done(e);
+		});
+	});
+	after(function (done) {
+		nano.db.destroy('test-convey-custom-properties', done);
+	});
+	
+	it('should be supported', function (done) {
+		convey = new Convey({
+			extendDocument: {
+				happyTimeCustomKey: 'woot-worthy!',
+				versions: 'override this!' // `versions` is a reserved key, the next test ensures this custom key is overridden
+			}
+		});
+		convey.on('done', function () {
+			db.get('convey-version', function (e, doc) {
+				if (e) return done(e);
+				assert.equal(doc.happyTimeCustomKey, 'woot-worthy!');
+				done();
+			});
+		});
+		convey.check(server, '0.0.1', path.join(__dirname, 'configs/custom_properties.json'));
+	});
+	it('should not override built-in properties', function (done) {
+		convey = new Convey();
+		convey.on('done', function () {
+			db.get('convey-version', function (e, doc) {
+				if (e) return done(e);
+				assert.notEqual(doc.versions, 'override this!');
+				db.destroy(doc._id, doc._rev, done);
+			});
+		});
+		convey.check(server, '0.0.2', path.join(__dirname, 'configs/custom_properties.json'));
+	});
+});
