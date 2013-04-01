@@ -3,7 +3,7 @@
 	
 	Created by Carson S. Christian <cscade@gmail.com>
 */
-/*global describe:true, it:true, beforeEach:true, afterEach:true */
+/*global describe:true, it:true, before:true, beforeEach:true, after:true, afterEach:true */
 
 var server = process.env.COUCH || 'http://localhost:5984';
 
