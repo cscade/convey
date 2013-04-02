@@ -1,7 +1,7 @@
 /*jshint couch:true */
 // Updates to convey.
-exports.convey = function (doc, done) {
-	done();
+exports.convey = function (doc, next) {
+	next();
 };
 // Design to publish.
 exports.design = {
