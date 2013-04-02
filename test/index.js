@@ -94,9 +94,9 @@ describe('Events:', function () {
 		});
 		convey.check(server, version, 'test/configs/empty.json');
 	});
-	it('should emit a `untouched` event when a database has never been updated', function (done) {
+	it('should emit a `database:untouched` event when a database has no `convey-version` document', function (done) {
 		events = 0;
-		convey.on('untouched', function (resource) {
+		convey.on('database:untouched', function (resource) {
 			assert.equal(resource.database, 'test-convey');
 			events++;
 		});
@@ -214,7 +214,7 @@ describe('version awareness', function () {
 		var untouched = 0, stale = 0;
 		
 		convey = new Convey();
-		convey.on('untouched', function () {
+		convey.on('database:untouched', function () {
 			untouched++;
 		});
 		convey.on('resource:stale', function () {
@@ -234,7 +234,7 @@ describe('version awareness', function () {
 		var untouched = 0, fresh = 0, stale = 0;
 		
 		convey = new Convey();
-		convey.on('untouched', function () {
+		convey.on('database:untouched', function () {
 			untouched++;
 		});
 		convey.on('resource:fresh', function () {
@@ -278,7 +278,7 @@ describe('version awareness', function () {
 		var untouched = 0, fresh = 0, stale = 0;
 		
 		convey = new Convey();
-		convey.on('untouched', function () {
+		convey.on('database:untouched', function () {
 			untouched++;
 		});
 		convey.on('resource:fresh', function () {
