@@ -233,6 +233,16 @@ convey.on('resource:done', function (info) {
 });
 ```
 
+## Error handling
+
+As an `EventEmitter`, convey will emit all errors it encounters as an `error` event.
+
+```javascript
+convey.on('error', function (e) {
+	...
+});
+```
+
 ## Constructor options
 
 ```javascript
