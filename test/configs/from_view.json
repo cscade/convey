@@ -1,0 +1,5 @@
+{
+	"test-convey-from-view": {
+		"sub-databases": "test/designs/from_view"
+	}
+}

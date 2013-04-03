@@ -8,16 +8,11 @@
 var server = process.env.COUCH || 'http://localhost:5984';
 
 var assert = require('assert'),
+	async = require('async'),
 	nano = require('nano')(server),
 	path = require('path'),
+	uuid = require('node-uuid'),
 	Convey = require('../').Convey;
-
-/*
-	Convenience.
-*/
-var dbRef = function () {
-	return nano.db.use('test-convey');
-};
 
 /*
 	Configuration file handling.
@@ -57,7 +52,7 @@ describe('Events:', function () {
 		nano.db.destroy('test-convey', function () {
 			nano.db.create('test-convey', function (e) {
 				if (e) return done(e);
-				db = dbRef();
+				db = nano.db.use('test-convey');
 				convey = new Convey();
 				done();
 			});
@@ -94,22 +89,9 @@ describe('Events:', function () {
 		});
 		convey.check(server, version, 'test/configs/empty.json');
 	});
-	it('should emit a `database:untouched` event when a database has no `convey-version` document', function (done) {
-		events = 0;
-		convey.on('database:untouched', function (resource) {
-			assert.equal(resource.database, 'test-convey');
-			events++;
-		});
-		convey.on('done', function () {
-			assert.equal(events, 1);
-			done();
-		});
-		convey.check(server, version, 'test/configs/empty.json');
-	});
 	it('should emit a `resource:fresh` event when a resource is up to date', function (done) {
 		events = 0;
 		convey.on('resource:fresh', function (resource) {
-			assert.equal(resource.database, 'test-convey');
 			assert.equal(resource.resource, 'test');
 			events++;
 		});
@@ -122,7 +104,6 @@ describe('Events:', function () {
 	it('should emit a `resource:stale` event when a resource needs updating', function (done) {
 		events = 0;
 		convey.on('resource:stale', function (resource) {
-			assert.equal(resource.database, 'test-convey');
 			assert.equal(resource.resource, 'test');
 			events++;
 		});
@@ -135,7 +116,6 @@ describe('Events:', function () {
 	it('should emit a `resource:stale` event when a resource does not need updating but check() ran with force = true', function (done) {
 		events = 0;
 		convey.on('resource:stale', function (resource) {
-			assert.equal(resource.database, 'test-convey');
 			assert.equal(resource.resource, 'test');
 			assert.equal(resource.forced, true);
 			events++;
@@ -149,7 +129,6 @@ describe('Events:', function () {
 	it('should emit a `resource:done` event after a resource was updated', function (done) {
 		events = 0;
 		convey.on('resource:done', function (resource) {
-			assert.equal(resource.database, 'test-convey');
 			assert.equal(resource.resource, 'test');
 			events++;
 		});
@@ -201,7 +180,7 @@ describe('version awareness', function () {
 	before(function (done) {
 		nano.db.destroy('test-convey', function () {
 			nano.db.create('test-convey', function (e) {
-				db = dbRef();
+				db = nano.db.use('test-convey');
 				done(e);
 			});
 		});
@@ -210,18 +189,14 @@ describe('version awareness', function () {
 		nano.db.destroy('test-convey', done);
 	});
 	
-	it('should know a new database was untouched', function (done) {
-		var untouched = 0, stale = 0;
+	it('should know a new database is stale', function (done) {
+		var stale = 0;
 		
 		convey = new Convey();
-		convey.on('database:untouched', function () {
-			untouched++;
-		});
 		convey.on('resource:stale', function () {
 			stale++;
 		});
 		convey.on('done', function () {
-			assert.equal(untouched, 1);
 			assert.equal(stale, 1);
 			done();
 		});
@@ -231,12 +206,9 @@ describe('version awareness', function () {
 		db.get('convey-version', done);
 	});
 	it('should not take any action on a consecutive run with no version change', function (done) {
-		var untouched = 0, fresh = 0, stale = 0;
+		var fresh = 0, stale = 0;
 		
 		convey = new Convey();
-		convey.on('database:untouched', function () {
-			untouched++;
-		});
 		convey.on('resource:fresh', function () {
 			fresh++;
 		});
@@ -244,7 +216,6 @@ describe('version awareness', function () {
 			stale++;
 		});
 		convey.on('done', function () {
-			assert.equal(untouched, 0);
 			assert.equal(fresh, 1);
 			assert.equal(stale, 0);
 			done();
@@ -275,12 +246,9 @@ describe('version awareness', function () {
 		});
 	});
 	it('should ignore databases with a newer convey version', function (done) {
-		var untouched = 0, fresh = 0, stale = 0;
+		var fresh = 0, stale = 0;
 		
 		convey = new Convey();
-		convey.on('database:untouched', function () {
-			untouched++;
-		});
 		convey.on('resource:fresh', function () {
 			fresh++;
 		});
@@ -288,7 +256,6 @@ describe('version awareness', function () {
 			stale++;
 		});
 		convey.on('done', function () {
-			assert.equal(untouched, 0);
 			assert.equal(fresh, 1);
 			assert.equal(stale, 0);
 			done();
@@ -306,7 +273,7 @@ describe('designs', function () {
 	before(function (done) {
 		nano.db.destroy('test-convey', function () {
 			nano.db.create('test-convey', function (e) {
-				db = dbRef();
+				db = nano.db.use('test-convey');
 				done(e);
 			});
 		});
@@ -368,16 +335,17 @@ describe('document updates', function () {
 	});
 	
 	it('should update and/or create matching documents', function (done) {
-		var updates, creates;
+		var updates = 0, creates = 0;
 		
 		convey = new Convey();
 		db.insert({
 			resource: 'thing'
 		}, function (e, body) {
 			if (e) return done(e);
-			convey.on('resource:done', function (resource) {
-				updates = resource.updated;
-				creates = resource.created;
+			convey.on('target:done', function (info) {
+				assert.equal(info.database, 'test-convey-document-updates');
+				updates = updates + info.updated;
+				creates = creates + info.created;
 			});
 			convey.on('done', function () {
 				db.get(body.id, function (e, thing) {
@@ -461,5 +429,145 @@ describe('custom properties on convey-version document', function () {
 			});
 		});
 		convey.check(server, '0.0.2', 'test/configs/custom_properties.json');
+	});
+});
+/*
+	Target databases derived from views.
+*/
+describe('target databases derived from views', function () {
+	var convey, db;
+	
+	// Reset database only once.
+	before(function (done) {
+		nano.db.create('test-convey-from-view', function (e) {
+			if (e) return done(e);
+			db = nano.db.use('test-convey-from-view');
+			// Create two dbRef documents.
+			async.series([
+				function (next) {
+					db.insert({
+						resource: 'dbRef',
+						target: 'test-convey-' + uuid.v4()
+					}, function (e, body) {
+						next(e, body);
+					});
+				},
+				function (next) {
+					db.insert({
+						resource: 'dbRef',
+						target: 'test-convey-' + uuid.v4()
+					}, function (e, body) {
+						next(e, body);
+					});
+				}
+			], function (e, documents) {
+				if (e) return done(e);
+				// Create databases from above ref documents.
+				async.forEachSeries(documents, function (doc, next) {
+					db.get(doc.id, function (e, dbRef) {
+						if (e) return next(e);
+						nano.db.create(dbRef.target, next);
+					});
+				}, done);
+			});
+		});
+	});
+	after(function (done) {
+		// Clean up sub-dbs.
+		db.view('dbs', 'allById', function (e, body) {
+			if (e) return done(e);
+			async.forEachSeries(body.rows, function (row, next) {
+				nano.db.destroy(row.value, next);
+			}, function (e) {
+				if (e) return done(e);
+				nano.db.destroy('test-convey-from-view', done);
+			});
+		});
+	});
+	
+	it('should apply all resource documents to all databases in the view', function (done) {
+		var events = {};
+		
+		convey = new Convey();
+		convey.on('database:start', function (info) {
+			assert.equal(info.database, 'test-convey-from-view');
+		}).on('resource:fresh', function (info) {
+			assert.equal(info.resource, 'sub-databases');
+		}).on('resource:stale', function (info) {
+			assert.equal(info.resource, 'sub-databases');
+		}).on('target:done', function (info) {
+			assert.equal(info.database, 'test-convey-from-view');
+			assert.equal(info.updated, 0);
+			assert.equal(info.created, 0);
+		}).on('resource:done', function (info) {
+			assert.equal(info.resource, 'sub-databases');
+		}).on('database:done', function (info) {
+			assert.equal(info.database, 'test-convey-from-view');
+		}).on('done', function () {
+			// Design is now published for getting sub-dbs by view.
+			db.view('dbs', 'allById', function (e, body) {
+				if (e) return done(e);
+				async.forEachSeries(body.rows, function (row, next) {
+					var sub = nano.db.use(row.value);
+					
+					// Create a foo and a bar document in each sub db.
+					async.series([
+						function (next) {
+							sub.insert({
+								resource: 'foo'
+							}, next);
+						},
+						function (next) {
+							sub.insert({
+								resource: 'bar'
+							}, next);
+						}
+					], next);
+				}, function (e) {
+					if (e) return done(e);
+					convey = new Convey();
+					convey.on('target:done', function (info) {
+						/*
+							This event should be fired 4 times, twice for each database,
+							once for each document-type.
+						*/
+						if (!events[info.database]) {
+							events[info.database] = {
+								created: info.created,
+								updated: info.updated
+							};
+						} else {
+							events[info.database].created = events[info.database].created + info.created;
+							events[info.database].updated = events[info.database].updated + info.updated;
+						}
+					});
+					convey.on('done', function () {
+						// Verify documents were updated as intended.
+						async.forEachSeries(body.rows, function (row, next) {
+							// Each database should have seen 0 creates.
+							assert.equal(events[row.value].created, 0);
+							// Each database should have seen 2 edits.
+							assert.equal(events[row.value].updated, 2);
+							nano.db.use(row.value).list({ include_docs: true }, function (e, body) {
+								if (e) return next(e);
+								// Check the actual edits on each document.
+								body.rows.forEach(function (row) {
+									if (row.doc.resource === 'foo') {
+										assert.strictEqual(row.doc.updatedFoo, true);
+										assert.notEqual(row.doc.updatedBar, true);
+									} else if (row.doc.resource === 'bar') {
+										assert.strictEqual(row.doc.updatedBar, true);
+										assert.notEqual(row.doc.updatedFoo, true);
+									}
+								});
+								next();
+							});
+						}, done);
+					});
+					convey.check(server, '0.0.1', 'test/configs/from_view_subs.json');
+				});
+			});
+		});
+		convey.check(server, '0.0.1', 'test/configs/from_view.json');
 	});
 });

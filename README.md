@@ -2,9 +2,17 @@
 
 [![Build Status](https://travis-ci.org/cscade/convey.png?branch=develop)](https://travis-ci.org/cscade/convey)
 
-The purpose of `convey` is to automate the transition of your app's CouchDB designs and existing documents when your release version changes. Often, a new version of your app will bring with it new features, new validation, document structure changes, etc. One way to handle document structure changes is to perform checks within any code that may use a given document resource, to see what version it is and adjust as needed. While that may work, it rapidly gets messy - and are you sure you got every case everywhere in your app? Furthermore, how will you know when all your documents have been updated and the "upgrade" code is no longer needed?
+Convey can greatly simplify the transition & upgrade of your app's CouchDB designs and documents when your release version changes.
 
-With convey, you can define arbitrary actions to take place within your CouchDB databases when each new version of your app starts up for the first time in production. This includes document updates, document creation, design publishing, and even the ability to publish to/modify documents in sub-databases defined by views.
+A new version of your production app will often bring with it new features, new validation, document structure changes, etc. One way to handle document structure changes is to perform checks within any code that may use a given document resource, to see what "version" it is and adjust as needed. While that may work in a pinch, it rapidly gets messy - and are you sure you got every case everywhere in your app? Furthermore, how will you know when all your documents have been updated and your "upgrade" code is no longer needed?
+
+With convey, you can define arbitrary actions to take place within your CouchDB databases when each new version of your app is deployed. These include;
+
+* Publish new designs.
+* "Upgrade" existing documents based on any criteria you define.
+* Create new documents, derived from existing documents or stand-alone.
+
+Have an advanced couchdb database structure with database names defined at runtime? Convey can handle those too.
 
 Relax, and convey your updates the first time.
 
@@ -16,9 +24,11 @@ Install convey locally and include it in your `package.json` with;
 npm install --save convey
 ```
 
-## Usage
+## Basic usage
 
-Convey will publish, update, and create couch designs and userland documents based on the configuration you provide. Convey stores a single `convey-version` document in each database it is configured to watch, and will only perform actions if the version has changed since it was last run, or it was "forced" (see options section below).
+Convey will publish, update, and create couch designs and userland documents based on the configuration you provide.
+
+Convey stores a single `convey-version` document in each top-level database it is configured to watch, and will only perform actions if the version your provide has changed since it was last run. Update passes can also be "forced" (see options section below).
 
 ### A basic json configuration file
 
@@ -68,11 +78,11 @@ This resource document contains both types of assets that convey can act on; a d
 
 The `design` export is a normal couch design document, and can contain anything couch knows how to deal with, for instance a `validate_doc_update` method. The design will be published if it doesn't already exist, and will be updated if it does exist.
 
-### exports.design
+#### exports.design
 
 The design example above supplies an `allTheThings` view, which contains all the documents with a `resource` property of `thing`. Basic stuff. As mentioned above, these are normal couch designs. Go nuts.
 
-### exports.convey
+#### exports.convey
 
 The edit/create method that convey will call to check documents against your changes is defined here. This method will be passed *every document in the database*, one at a time, while convey is running a check pass. You can perform any changes you like to the document, and pass it back to convey with `next(doc)`. 
 
@@ -82,7 +92,7 @@ If you don't want to update a document, simply don't pass it back to `next()`, a
 
 If you only want to use convey to publish design updates and don't care about inline edit/create, just omit the export entirely. The only thing that is required is if you *do* provide a method, be sure to call next no matter if you update the document or not.
 
-### Getting it all to run
+### Press Go!
 
 Once you have a configuration file and a resource document set up, you're ready to roll.
 
@@ -98,7 +108,7 @@ Using this code, convey will check each database in your configuration file, and
 
 Convey uses [node-semver](https://github.com/isaacs/node-semver) to compare all your version numbers, and decide what is newer.
 
-For more advanced configuration and options, read on.
+For more advanced configuration and tasks, read on.
 
 ## Creating new documents
 
@@ -122,114 +132,125 @@ exports.convey = function (doc, next) {
 
 As with `doc`, `newDoc` is entirely optional and you can pass either, both, or none. doc will be updated if provided, and newDoc will be created if provided.
 
+The structure of `newDoc` is completely arbitrary, and it does not need to relate to the previous document in any way.
+
+## Advanced database structures
+
+Some applications span a large number of databases. For instance, perhaps an application has a database for each "account" on the application, which stores all the documents related to that account.
+
+Convey provides a simple mechanism to work with these databases at runtime, without prior knowledge of the database names at design time.
+
+All you need to do is provide a view that returns the names of the target databases, and convey will recursively apply all the assets you specify to all the databases returned.
+
+```json
+{
+	"applicationDatabase": {
+		"accounts-users": {
+			"view": "accounts/allById",
+			"assets": "couchdb/designs/accounts/users"
+		},
+		"accounts-things": {
+			"view": "accounts/allById",
+			"assets": "couchdb/designs/accounts/things"
+		}
+	}
+}
+```
+
+In this configuration file, the database *applicationDatabase* will be queried by the view *accounts/allById* for each resource - *accounts-users* and *accounts-things* - and the assets specified will be applied to *each database returned by the view*.
+
+The view must be formatted such that it returns the target database name as the `value` of emit. ex.
+
+```javascript
+allById: {
+	map: function (doc) {
+		if (doc.resource === 'account') {
+			emit(doc._id, doc.dbName);
+		}
+	}
+}
+```
+
+The emitted `key` is not used by convey. For further examples, refer to the tests under "Target databases derived from views".
+
 ## Events & Logging
 
-Convey is a good stdio citizen. It won't print anything to stdout or stderr, ever. But never fear, it does provide rich events that let you hook into what's happening and log to your heart's content.
+Convey is a good stdio citizen. It won't print anything to stdout or stderr, ever.
+
+But never fear, it does provide rich events that let you hook into what's happening and log to your heart's content.
 
 ### Primary events
 
-#### start
+#### start(info)
 
-```javascript
-convey.on('start', function (info) {
-	/*
-		info.couch: The couchdb url convey is acting against.
-		info.version: The version string convey is currently checking your databases against.
-		info.config: The configuration object convey is working against.
-	*/
-});
-```
+Fires once, before any work is performed.
 
-#### done
+* `info.couch`: The couchdb url convey is acting against.
+* `info.version`: The version string convey is currently checking your databases against.
+* `info.config`: The configuration object convey is working against.
 
-```javascript
-convey.on('done', function (info) {
-	/*
-		Convey is done with all databases.
-		
-		info.duration: The total execution time, in seconds.
-	*/
-});
-```
+#### done(info)
+
+Fires once, when convey is done with all resources.
+
+* `info.duration`: The total execution time, in seconds.
 
 ### Database level events
 
-#### database:start
+Database level events refer to the database at the top level of your configuration document. This is also the database convey will store it's version document in.
 
-```javascript
-convey.on('database:start', function (info) {
-	/*
-		info.database: The name of the database work is now beginning on.
-	*/
-});
-```
+#### database:start(info)
 
-#### database:untouched
+* `info.database`: The name of the database work is now beginning on.
 
-```javascript
-convey.on('database:untouched', function (info) {
-	/*
-		Fires only when the database work has just begun on has no `convey-version` document,
-		indicating this is the first pass.
-		
-		info.database: The name of the database work is now beginning on.
-	*/
-});
-```
+#### database:done(info)
 
-#### database:done
-
-```javascript
-convey.on('database:done', function (info) {
-	/*
-		info.database: The name of the database work has just completed on.
-	*/
-});
-```
+* `info.database`: The name of the database work has just completed on.
 
 ### Resource level events
 
-#### resource:fresh
+Resource level events refer to the second level of your configuration file, your arbitrary resource names within a database.
+
+#### resource:fresh(info)
+
+Fires when a resource has already been updated to the current version.
+
+* `info.resource`: The name of the resource currently being worked on, from the configuration file.
+
+#### resource:stale(info)
+
+Fires when a resource has not been updated to the current version, and updates are about to commence.
+
+* `info.resource`: The name of the resource currently being worked on, from the configuration file.
+* `info.forced`: `true` if the resource was "forced" to be stale. See methods.
+
+#### resource:done(info)
+
+Fires when a resource has been processed. This event will not fire unless the resource was stale.
+
+* `info.resource`: The name of the resource currently being worked on, from the configuration file.
+
+### Target level events
+
+Target level events refer to the database in which edit/create operations are actually taking place.
+
+In most use cases, the target level events will refer to the same database as the database level events do. In advanced use cases, they will refer to sub-databases defined by views. See the advanced section for more information.
+
+#### target:done(info)
+
+Fires when a target database has been processed. This event will not fire unless the resource was stale.
+
+* `info.database`: The name of the target database in which edit/create operations occured.
+* `info.updated`: A count of the number of documents updated.
+* `info.created`: A count of the number of documents created.
+
+## Error handling
+
+As an `EventEmitter`, convey will emit all errors it encounters as an `error` event.
 
 ```javascript
-convey.on('resource:fresh', function (info) {
-	/*
-		Fires when a resource has already been updated to the current version.
-		
-		info.database: The name of the database this resource resides in.
-		info.resource: The name of the resource currently being worked on, from the configuration file.
-	*/
-});
-```
-
-### resource:stale
-
-```javascript
-convey.on('resource:stale', function (info) {
-	/*
-		Fires when a resource has not been updated to the current version, and updates
-		are about to commence.
-		
-		info.database: The name of the database this resource resides in.
-		info.resource: The name of the resource currently being worked on, from the configuration file.
-		info.forced: `true` if the resource was "forced" to be stale. See methods.
-	*/
-});
-```
-
-### resource:done
-
-```javascript
-convey.on('resource:done', function (info) {
-	/*
-		Fires when a resource has been processed. This event will not fire unless
-		the resource was also stale.
-		
-		info.database: The name of the database this resource resides in.
-		info.resource: The name of the resource currently being worked on, from the configuration file.
-		info.updated: A count of the number of documents updated.
-		info.created: A count of the number of documents created.
-	*/
+convey.on('error', function (e) {
+	...
 });
 ```
 
@@ -239,7 +260,8 @@ convey.on('resource:done', function (info) {
 convey = new Convey(options);
 ```
 
-* `extendDocument` - Object. Use this option to include any data you need to have "extended in" to the `convey-version` document. A common use case is supporting databases with validate_doc_update checks that require particualar properties on all documents.
+* `extendDocument` - Object. Use this option to include any data you need to have "extended in" to the `convey-version` document.
+	* A common use case is supporting databases with validate_doc_update checks that require particualar properties on all documents.
 
 ## Instance methods
 
@@ -266,7 +288,7 @@ COUCH=http://your-couch-url:5984 npm test
 
 (The MIT License)
 
-Copyright (c) 2013 Carson Christian <cscade@gmail.com>
+Copyright © 2013 Carson S. Christian <cscade@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
