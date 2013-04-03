@@ -503,7 +503,7 @@ describe('target databases derived from views', function () {
 			assert.equal(info.resource, 'sub-databases');
 		}).on('database:done', function (info) {
 			assert.equal(info.database, 'test-convey-from-view');
-		}).on('done', function (info) {
+		}).on('done', function () {
 			// Design is now published for getting sub-dbs by view.
 			db.view('dbs', 'allById', function (e, body) {
 				if (e) return done(e);
