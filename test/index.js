@@ -90,7 +90,6 @@ describe('Events:', function () {
 	it('should emit a `resource:fresh` event when a resource is up to date', function (done) {
 		events = 0;
 		convey.on('resource:fresh', function (resource) {
-			assert.equal(resource.database, 'test-convey');
 			assert.equal(resource.resource, 'test');
 			events++;
 		});
@@ -103,7 +102,6 @@ describe('Events:', function () {
 	it('should emit a `resource:stale` event when a resource needs updating', function (done) {
 		events = 0;
 		convey.on('resource:stale', function (resource) {
-			assert.equal(resource.database, 'test-convey');
 			assert.equal(resource.resource, 'test');
 			events++;
 		});
@@ -116,7 +114,6 @@ describe('Events:', function () {
 	it('should emit a `resource:stale` event when a resource does not need updating but check() ran with force = true', function (done) {
 		events = 0;
 		convey.on('resource:stale', function (resource) {
-			assert.equal(resource.database, 'test-convey');
 			assert.equal(resource.resource, 'test');
 			assert.equal(resource.forced, true);
 			events++;
@@ -130,7 +127,6 @@ describe('Events:', function () {
 	it('should emit a `resource:done` event after a resource was updated', function (done) {
 		events = 0;
 		convey.on('resource:done', function (resource) {
-			assert.equal(resource.database, 'test-convey');
 			assert.equal(resource.resource, 'test');
 			events++;
 		});

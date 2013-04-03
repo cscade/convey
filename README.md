@@ -183,7 +183,6 @@ convey.on('resource:fresh', function (info) {
 	/*
 		Fires when a resource has already been updated to the current version.
 		
-		info.database: The name of the database this resource resides in.
 		info.resource: The name of the resource currently being worked on, from the configuration file.
 	*/
 });
@@ -197,7 +196,6 @@ convey.on('resource:stale', function (info) {
 		Fires when a resource has not been updated to the current version, and updates
 		are about to commence.
 		
-		info.database: The name of the database this resource resides in.
 		info.resource: The name of the resource currently being worked on, from the configuration file.
 		info.forced: `true` if the resource was "forced" to be stale. See methods.
 	*/
@@ -212,7 +210,6 @@ convey.on('resource:done', function (info) {
 		Fires when a resource has been processed. This event will not fire unless
 		the resource was also stale.
 		
-		info.database: The name of the database this resource resides in.
 		info.resource: The name of the resource currently being worked on, from the configuration file.
 		info.updated: A count of the number of documents updated.
 		info.created: A count of the number of documents created.
