@@ -13,13 +13,6 @@ var assert = require('assert'),
 	Convey = require('../').Convey;
 
 /*
-	Convenience.
-*/
-var dbRef = function () {
-	return nano.db.use('test-convey');
-};
-
-/*
 	Configuration file handling.
 */
 describe('configure()', function () {
@@ -57,7 +50,7 @@ describe('Events:', function () {
 		nano.db.destroy('test-convey', function () {
 			nano.db.create('test-convey', function (e) {
 				if (e) return done(e);
-				db = dbRef();
+				db = nano.db.use('test-convey');
 				convey = new Convey();
 				done();
 			});
@@ -201,7 +194,7 @@ describe('version awareness', function () {
 	before(function (done) {
 		nano.db.destroy('test-convey', function () {
 			nano.db.create('test-convey', function (e) {
-				db = dbRef();
+				db = nano.db.use('test-convey');
 				done(e);
 			});
 		});
@@ -306,7 +299,7 @@ describe('designs', function () {
 	before(function (done) {
 		nano.db.destroy('test-convey', function () {
 			nano.db.create('test-convey', function (e) {
-				db = dbRef();
+				db = nano.db.use('test-convey');
 				done(e);
 			});
 		});
