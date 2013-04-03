@@ -8,8 +8,10 @@
 var server = process.env.COUCH || 'http://localhost:5984';
 
 var assert = require('assert'),
+	async = require('async'),
 	nano = require('nano')(server),
 	path = require('path'),
+	uuid = require('node-uuid'),
 	Convey = require('../').Convey;
 
 /*
@@ -427,5 +429,145 @@ describe('custom properties on convey-version document', function () {
 			});
 		});
 		convey.check(server, '0.0.2', 'test/configs/custom_properties.json');
+	});
+});
+/*
+	Target databases derived from views.
+*/
+describe('target databases derived from views', function () {
+	var convey, db;
+	
+	// Reset database only once.
+	before(function (done) {
+		nano.db.create('test-convey-from-view', function (e) {
+			if (e) return done(e);
+			db = nano.db.use('test-convey-from-view');
+			// Create two dbRef documents.
+			async.series([
+				function (next) {
+					db.insert({
+						resource: 'dbRef',
+						target: 'test-convey-' + uuid.v4()
+					}, function (e, body) {
+						next(e, body);
+					});
+				},
+				function (next) {
+					db.insert({
+						resource: 'dbRef',
+						target: 'test-convey-' + uuid.v4()
+					}, function (e, body) {
+						next(e, body);
+					});
+				}
+			], function (e, documents) {
+				if (e) return done(e);
+				// Create databases from above ref documents.
+				async.forEachSeries(documents, function (doc, next) {
+					db.get(doc.id, function (e, dbRef) {
+						if (e) return next(e);
+						nano.db.create(dbRef.target, next);
+					});
+				}, done);
+			});
+		});
+	});
+	after(function (done) {
+		// Clean up sub-dbs.
+		db.view('dbs', 'allById', function (e, body) {
+			if (e) return done(e);
+			async.forEachSeries(body.rows, function (row, next) {
+				nano.db.destroy(row.value, next);
+			}, function (e) {
+				if (e) return done(e);
+				nano.db.destroy('test-convey-from-view', done);
+			});
+		});
+	});
+	
+	it('should apply all resource documents to all databases in the view', function (done) {
+		var events = {};
+		
+		convey = new Convey();
+		convey.on('database:start', function (info) {
+			assert.equal(info.database, 'test-convey-from-view');
+		}).on('resource:fresh', function (info) {
+			assert.equal(info.resource, 'sub-databases');
+		}).on('resource:stale', function (info) {
+			assert.equal(info.resource, 'sub-databases');
+		}).on('target:done', function (info) {
+			assert.equal(info.database, 'test-convey-from-view');
+			assert.equal(info.updated, 0);
+			assert.equal(info.created, 0);
+		}).on('resource:done', function (info) {
+			assert.equal(info.resource, 'sub-databases');
+		}).on('database:done', function (info) {
+			assert.equal(info.database, 'test-convey-from-view');
+		}).on('done', function (info) {
+			// Design is now published for getting sub-dbs by view.
+			db.view('dbs', 'allById', function (e, body) {
+				if (e) return done(e);
+				async.forEachSeries(body.rows, function (row, next) {
+					var sub = nano.db.use(row.value);
+					
+					// Create a foo and a bar document in each sub db.
+					async.series([
+						function (next) {
+							sub.insert({
+								resource: 'foo'
+							}, next);
+						},
+						function (next) {
+							sub.insert({
+								resource: 'bar'
+							}, next);
+						}
+					], next);
+				}, function (e) {
+					if (e) return done(e);
+					convey = new Convey();
+					convey.on('target:done', function (info) {
+						/*
+							This event should be fired 4 times, twice for each database,
+							once for each document-type.
+						*/
+						if (!events[info.database]) {
+							events[info.database] = {
+								created: info.created,
+								updated: info.updated
+							};
+						} else {
+							events[info.database].created = events[info.database].created + info.created;
+							events[info.database].updated = events[info.database].updated + info.updated;
+						}
+					});
+					convey.on('done', function () {
+						// Verify documents were updated as intended.
+						async.forEachSeries(body.rows, function (row, next) {
+							// Each database should have seen 0 creates.
+							assert.equal(events[row.value].created, 0);
+							// Each database should have seen 2 edits.
+							assert.equal(events[row.value].updated, 2);
+							nano.db.use(row.value).list({ include_docs: true }, function (e, body) {
+								if (e) return next(e);
+								// Check the actual edits on each document.
+								body.rows.forEach(function (row) {
+									if (row.doc.resource === 'foo') {
+										assert.strictEqual(row.doc.updatedFoo, true);
+										assert.notEqual(row.doc.updatedBar, true);
+									} else if (row.doc.resource === 'bar') {
+										assert.strictEqual(row.doc.updatedBar, true);
+										assert.notEqual(row.doc.updatedFoo, true);
+									}
+								});
+								next();
+							});
+						}, done);
+					});
+					convey.check(server, '0.0.1', 'test/configs/from_view_subs.json');
+				});
+			});
+		});
+		convey.check(server, '0.0.1', 'test/configs/from_view.json');
 	});
 });

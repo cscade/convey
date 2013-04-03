@@ -1,36 +1,37 @@
 {
-    "name": "convey",
-    "version": "0.1.1",
-    "description": "A CouchDB design babysitter and automated document converter. Automate document changes with application version.",
-    "main": "index.js",
-    "scripts": {
-        "test": "mocha test/index.js -R dot"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git@github.com:cscade/convey.git"
-    },
-    "keywords": [
-        "couchdb",
-        "design",
-        "view",
-        "automate",
-        "document",
-        "update",
-        "version"
-    ],
-    "author": "Carson S. Christian <cscade@gmail.com>",
-    "license": "MIT",
-    "dependencies": {
-        "semver": "~1.1.4",
-        "async": "~0.2.6",
-        "nano": "~3.3.8",
-        "xtend": "~2.0.3"
-    },
-    "devDependencies": {
-        "grunt": "~0.4.1",
-        "grunt-contrib-jshint": "~0.3.0",
-        "grunt-contrib-watch": "~0.3.1",
-        "mocha": "~1.8.2"
-    }
+  "name": "convey",
+  "version": "0.1.1",
+  "description": "A CouchDB design babysitter and automated document converter. Automate document changes with application version.",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha test/index.js -R dot"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:cscade/convey.git"
+  },
+  "keywords": [
+    "couchdb",
+    "design",
+    "view",
+    "automate",
+    "document",
+    "update",
+    "version"
+  ],
+  "author": "Carson S. Christian <cscade@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "semver": "~1.1.4",
+    "async": "~0.2.6",
+    "nano": "~3.3.8",
+    "xtend": "~2.0.3"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-jshint": "~0.3.0",
+    "grunt-contrib-watch": "~0.3.1",
+    "mocha": "~1.8.2",
+    "node-uuid": "~1.4.0"
+  }
 }

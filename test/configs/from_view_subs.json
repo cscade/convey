@@ -1,0 +1,12 @@
+{
+	"test-convey-from-view": {
+		"sub-databases-foos": {
+			"view": "dbs/allById",
+			"design": "test/designs/from_view_foos"
+		},
+		"sub-databases-bars": {
+			"view": "dbs/allById",
+			"design": "test/designs/from_view_bars"
+		}
+	}
+}
