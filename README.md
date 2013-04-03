@@ -202,15 +202,34 @@ convey.on('resource:stale', function (info) {
 });
 ```
 
-### resource:done
+#### resource:done
 
 ```javascript
 convey.on('resource:done', function (info) {
 	/*
 		Fires when a resource has been processed. This event will not fire unless
-		the resource was also stale.
+		the resource was stale.
 		
 		info.resource: The name of the resource currently being worked on, from the configuration file.
+	*/
+});
+```
+
+### Target level events
+
+Target level events refer to the database in which edit/create operations are actually taking place.
+
+In most use cases, the target level events will refer to the same database as the database level events do. In advanced use cases, they will refer to sub-databases defined by views. See the advanced section for more information.
+
+#### target:done
+
+```javascript
+convey.on('target:done', function (info) {
+	/*
+		Fires when a target database has been processed. This event will not fire unless
+		the resource was stale.
+		
+		info.database: The name of the target database in which edit/create operations occured.
 		info.updated: A count of the number of documents updated.
 		info.created: A count of the number of documents created.
 	*/

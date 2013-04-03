@@ -333,16 +333,17 @@ describe('document updates', function () {
 	});
 	
 	it('should update and/or create matching documents', function (done) {
-		var updates, creates;
+		var updates = 0, creates = 0;
 		
 		convey = new Convey();
 		db.insert({
 			resource: 'thing'
 		}, function (e, body) {
 			if (e) return done(e);
-			convey.on('resource:done', function (resource) {
-				updates = resource.updated;
-				creates = resource.created;
+			convey.on('target:done', function (info) {
+				assert.equal(info.database, 'test-convey-document-updates');
+				updates = updates + info.updated;
+				creates = creates + info.created;
 			});
 			convey.on('done', function () {
 				db.get(body.id, function (e, thing) {
