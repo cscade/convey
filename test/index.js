@@ -87,18 +87,6 @@ describe('Events:', function () {
 		});
 		convey.check(server, version, 'test/configs/empty.json');
 	});
-	it('should emit a `database:untouched` event when a database has no `convey-version` document', function (done) {
-		events = 0;
-		convey.on('database:untouched', function (resource) {
-			assert.equal(resource.database, 'test-convey');
-			events++;
-		});
-		convey.on('done', function () {
-			assert.equal(events, 1);
-			done();
-		});
-		convey.check(server, version, 'test/configs/empty.json');
-	});
 	it('should emit a `resource:fresh` event when a resource is up to date', function (done) {
 		events = 0;
 		convey.on('resource:fresh', function (resource) {
@@ -203,18 +191,14 @@ describe('version awareness', function () {
 		nano.db.destroy('test-convey', done);
 	});
 	
-	it('should know a new database was untouched', function (done) {
-		var untouched = 0, stale = 0;
+	it('should know a new database is stale', function (done) {
+		var stale = 0;
 		
 		convey = new Convey();
-		convey.on('database:untouched', function () {
-			untouched++;
-		});
 		convey.on('resource:stale', function () {
 			stale++;
 		});
 		convey.on('done', function () {
-			assert.equal(untouched, 1);
 			assert.equal(stale, 1);
 			done();
 		});
@@ -224,12 +208,9 @@ describe('version awareness', function () {
 		db.get('convey-version', done);
 	});
 	it('should not take any action on a consecutive run with no version change', function (done) {
-		var untouched = 0, fresh = 0, stale = 0;
+		var fresh = 0, stale = 0;
 		
 		convey = new Convey();
-		convey.on('database:untouched', function () {
-			untouched++;
-		});
 		convey.on('resource:fresh', function () {
 			fresh++;
 		});
@@ -237,7 +218,6 @@ describe('version awareness', function () {
 			stale++;
 		});
 		convey.on('done', function () {
-			assert.equal(untouched, 0);
 			assert.equal(fresh, 1);
 			assert.equal(stale, 0);
 			done();
@@ -268,12 +248,9 @@ describe('version awareness', function () {
 		});
 	});
 	it('should ignore databases with a newer convey version', function (done) {
-		var untouched = 0, fresh = 0, stale = 0;
+		var fresh = 0, stale = 0;
 		
 		convey = new Convey();
-		convey.on('database:untouched', function () {
-			untouched++;
-		});
 		convey.on('resource:fresh', function () {
 			fresh++;
 		});
@@ -281,7 +258,6 @@ describe('version awareness', function () {
 			stale++;
 		});
 		convey.on('done', function () {
-			assert.equal(untouched, 0);
 			assert.equal(fresh, 1);
 			assert.equal(stale, 0);
 			done();

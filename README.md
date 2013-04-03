@@ -164,19 +164,6 @@ convey.on('database:start', function (info) {
 });
 ```
 
-#### database:untouched
-
-```javascript
-convey.on('database:untouched', function (info) {
-	/*
-		Fires only when the database work has just begun on has no `convey-version` document,
-		indicating this is the first pass.
-		
-		info.database: The name of the database work is now beginning on.
-	*/
-});
-```
-
 #### database:done
 
 ```javascript
