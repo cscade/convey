@@ -173,6 +173,34 @@ allById: {
 
 The emitted `key` is not used by convey. For further examples, refer to the tests under "Target databases derived from views".
 
+## Constructor options
+
+```javascript
+convey = new Convey(options);
+```
+
+* `extendDocument` - Object. Use this option to include any data you need to have "extended in" to the `convey-version` document.
+	* A common use case is supporting databases with validate_doc_update checks that require particualar properties on all documents.
+
+## Instance methods
+
+### check(couch, version, config, [force], [callback])
+
+The check method is your primary interaction point with convey. Call it whenever you want a full check of all configured databases to occur, typically on each application startup.
+
+* `couch` - mixed. The connection information for [nano](https://github.com/dscape/nano). Anything you could normally pass to `require('nano')(...)`
+* `version` - String. The version number to update all configured databases to.
+* `config` - String. Configuration file location, relative to `process.cwd()`.
+* `force` - Boolean. Force all resources in all configured databases to be "stale", regardless of their last checked version.
+	* This option is useful in development, when your designs are changing often and you went to keep them up to date with each application restart.
+* `callback(err)` - Function. Called when convey is done performing work, or encounters an error.
+
+## Error handling
+
+Convey will handle errors in two different ways, depending on how you call the `check` instance method.
+
+If you provide a callback, your callback will receive an error object as the first parameter, and no error event will be emitted. If you do not provide a callback, the error will be emitted instead.
+
 ## Events & Logging
 
 Convey is a good stdio citizen. It won't print anything to stdout or stderr, ever.
@@ -243,37 +271,6 @@ Fires when a target database has been processed. This event will not fire unless
 * `info.database`: The name of the target database in which edit/create operations occured.
 * `info.updated`: A count of the number of documents updated.
 * `info.created`: A count of the number of documents created.
-
-## Error handling
-
-As an `EventEmitter`, convey will emit all errors it encounters as an `error` event.
-
-```javascript
-convey.on('error', function (e) {
-	...
-});
-```
-
-## Constructor options
-
-```javascript
-convey = new Convey(options);
-```
-
-* `extendDocument` - Object. Use this option to include any data you need to have "extended in" to the `convey-version` document.
-	* A common use case is supporting databases with validate_doc_update checks that require particualar properties on all documents.
-
-## Instance methods
-
-### check(couch, version, config, [force])
-
-The check method is your primary interaction point with convey. Call it whenever you want a full check of all configured databases to occur, typically on each application startup.
-
-* `couch` - mixed. The connection information for [nano](https://github.com/dscape/nano). Anything you could normally pass to `require('nano')(...)`
-* `version` - String. The version number to update all configured databases to.
-* `config` - String. Configuration file location, relative to `process.cwd()`.
-* `force` - Boolean. Force all resources in all configured databases to be "stale", regardless of their last checked version.
-	* This option is useful in development, when your designs are changing often and you went to keep them up to date with each application restart.
 
 ## Tests
 
