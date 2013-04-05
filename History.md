@@ -1,3 +1,7 @@
+## 0.2.1 - 2013-04-05
+
+* accept a callback on check(), making event listeners entirely optional
+
 ## 0.2.0 - 2013-04-03
 
 This release may break logging handlers on events, as some information emitted has changed.
