@@ -10,36 +10,9 @@ var server = process.env.COUCH || 'http://localhost:5984';
 var assert = require('assert'),
 	async = require('async'),
 	nano = require('nano')(server),
-	path = require('path'),
 	uuid = require('node-uuid'),
 	Convey = require('../').Convey;
 
-/*
-	Configuration file handling.
-*/
-describe('configure()', function () {
-	it('should load a configuration file from disk', function () {
-		var good = new Convey();
-		
-		good.configure('test/configs/empty.json');
-	});
-	it('should emit an error when a bad configuration file is specified', function () {
-		var bad = new Convey();
-		
-		bad.on('error', function (e) {
-			assert(e.message);
-		});
-		bad.configure(path.join(__dirname, 'configs/bad.json'));
-	});
-	it('should emit an error when a missing configuration file is specified', function () {
-		var missing = new Convey();
-		
-		missing.on('error', function (e) {
-			assert(e.message);
-		});
-		missing.configure('test/configs/missing.json');
-	});
-});
 /*
 	Events.
 */
@@ -71,11 +44,11 @@ describe('Events:', function () {
 			assert.equal(details.config.toString(), '[object Object]');
 			events++;
 		});
-		convey.on('done', function () {
+		convey.check(server, version, 'test/configs/empty.json', function (e) {
+			if (e) return done(e);
 			assert.equal(events, 1);
 			done();
 		});
-		convey.check(server, version, 'test/configs/empty.json');
 	});
 	it('should emit a `database:start` event at the beginning of examining a database', function (done) {
 		events = 0;
@@ -83,11 +56,11 @@ describe('Events:', function () {
 			assert.equal(details.database, 'test-convey');
 			events++;
 		});
-		convey.on('done', function () {
+		convey.check(server, version, 'test/configs/empty.json', function (e) {
+			if (e) return done(e);
 			assert.equal(events, 1);
 			done();
 		});
-		convey.check(server, version, 'test/configs/empty.json');
 	});
 	it('should emit a `resource:fresh` event when a resource is up to date', function (done) {
 		events = 0;
@@ -95,11 +68,11 @@ describe('Events:', function () {
 			assert.equal(resource.resource, 'test');
 			events++;
 		});
-		convey.on('done', function () {
+		convey.check(server, version, 'test/configs/empty.json', function (e) {
+			if (e) return done(e);
 			assert.equal(events, 1);
 			done();
 		});
-		convey.check(server, version, 'test/configs/empty.json');
 	});
 	it('should emit a `resource:stale` event when a resource needs updating', function (done) {
 		events = 0;
@@ -107,11 +80,11 @@ describe('Events:', function () {
 			assert.equal(resource.resource, 'test');
 			events++;
 		});
-		convey.on('done', function () {
+		convey.check(server, '0.0.1', 'test/configs/empty.json', function (e) {
+			if (e) return done(e);
 			assert.equal(events, 1);
 			done();
 		});
-		convey.check(server, '0.0.1', 'test/configs/empty.json');
 	});
 	it('should emit a `resource:stale` event when a resource does not need updating but check() ran with force = true', function (done) {
 		events = 0;
@@ -120,11 +93,11 @@ describe('Events:', function () {
 			assert.equal(resource.forced, true);
 			events++;
 		});
-		convey.on('done', function () {
+		convey.check(server, version, 'test/configs/empty.json', true, function (e) {
+			if (e) return done(e);
 			assert.equal(events, 1);
 			done();
 		});
-		convey.check(server, version, 'test/configs/empty.json', true);
 	});
 	it('should emit a `resource:done` event after a resource was updated', function (done) {
 		events = 0;
@@ -132,11 +105,11 @@ describe('Events:', function () {
 			assert.equal(resource.resource, 'test');
 			events++;
 		});
-		convey.on('done', function () {
+		convey.check(server, '0.0.1', 'test/configs/empty.json', function (e) {
+			if (e) return done(e);
 			assert.equal(events, 1);
 			done();
 		});
-		convey.check(server, '0.0.1', 'test/configs/empty.json');
 	});
 	it('should emit a `database:done` event when done examining a database', function (done) {
 		events = 0;
@@ -144,18 +117,23 @@ describe('Events:', function () {
 			assert.equal(details.database, 'test-convey');
 			events++;
 		});
-		convey.on('done', function () {
+		convey.check(server, version, 'test/configs/empty.json', function (e) {
+			if (e) return done(e);
 			assert.equal(events, 1);
 			done();
 		});
-		convey.check(server, version, 'test/configs/empty.json');
 	});
 	it('should emit a `done` event at the end of a check pass', function (done) {
+		events = 0;
 		convey.on('done', function (info) {
 			assert.equal(typeof info.duration, 'number');
+			events++;
+		});
+		convey.check(server, version, 'test/configs/empty.json', function (e) {
+			if (e) return done(e);
+			assert.equal(events, 1);
 			done();
 		});
-		convey.check(server, version, 'test/configs/empty.json');
 	});
 	it('should not emit a `resource:done` event if work did not need to be done', function (done) {
 		events = 0;
@@ -163,11 +141,71 @@ describe('Events:', function () {
 			// This event should not fire, since we are passing a version of 0.0.0
 			events++;
 		});
-		convey.on('done', function () {
+		convey.check(server, version, 'test/configs/empty.json', function (e) {
+			if (e) return done(e);
 			assert.equal(events, 0);
 			done();
 		});
-		convey.check(server, version, 'test/configs/empty.json');
+	});
+});
+/*
+	Error handling.
+*/
+describe('Errors', function () {
+	it('should be the first parameter of the callback', function (done) {
+		var convey = new Convey();
+		
+		convey.check(server, '0.0.1', 'test/configs/missing.json', function (e) {
+			assert.equal(e.name, 'Error');
+			done();
+		});
+	});
+	it('should be emitted if there is no callback', function (done) {
+		var convey = new Convey();
+		
+		convey.on('error', function (e) {
+			assert.equal(e.name, 'Error');
+			done();
+		});
+		convey.check(server, '0.0.1', 'test/configs/missing.json');
+	});
+	it('should not be emitted if there is a callback', function (done) {
+		var convey = new Convey(), events = 0;
+		
+		convey.on('error', function () {
+			events++;
+		});
+		convey.check(server, '0.0.1', 'test/configs/missing.json', function (e) {
+			assert.equal(e.name, 'Error');
+			assert.equal(events, 0);
+			done();
+		});
+	});
+	describe('should be generated when configuration files', function () {
+		it('are missing', function (done) {
+			var convey = new Convey();
+			
+			convey.check(server, '0.0.1', 'test/configs/bad/missing.json', function (e) {
+				assert.equal(e.name, 'Error');
+				done();
+			});
+		});
+		it('are empty', function (done) {
+			var convey = new Convey();
+			
+			convey.check(server, '0.0.1', 'test/configs/bad/empty.json', function (e) {
+				assert.equal(e.name, 'SyntaxError');
+				done();
+			});
+		});
+		it('are malformed', function (done) {
+			var convey = new Convey();
+			
+			convey.check(server, '0.0.1', 'test/configs/bad/bad.json', function (e) {
+				assert.equal(e.name, 'SyntaxError');
+				done();
+			});
+		});
 	});
 });
 /*
@@ -196,11 +234,11 @@ describe('version awareness', function () {
 		convey.on('resource:stale', function () {
 			stale++;
 		});
-		convey.on('done', function () {
+		convey.check(server, '0.0.1', 'test/configs/empty.json', function (e) {
+			if (e) return done(e);
 			assert.equal(stale, 1);
 			done();
 		});
-		convey.check(server, '0.0.1', 'test/configs/empty.json');
 	});
 	it('should create a new version document after the first run', function (done) {
 		db.get('convey-version', done);
@@ -215,12 +253,12 @@ describe('version awareness', function () {
 		convey.on('resource:stale', function () {
 			stale++;
 		});
-		convey.on('done', function () {
+		convey.check(server, '0.0.1', 'test/configs/empty.json', function (e) {
+			if (e) return done(e);
 			assert.equal(fresh, 1);
 			assert.equal(stale, 0);
 			done();
 		});
-		convey.check(server, '0.0.1', 'test/configs/empty.json');
 	});
 	it('should take action on a consecutive run after a version change', function (done) {
 		var fresh = 0, stale = 0;
@@ -232,12 +270,12 @@ describe('version awareness', function () {
 		convey.on('resource:stale', function () {
 			stale++;
 		});
-		convey.on('done', function () {
+		convey.check(server, '0.0.2', 'test/configs/empty.json', function (e) {
+			if (e) return done(e);
 			assert.equal(fresh, 0);
 			assert.equal(stale, 1);
 			done();
 		});
-		convey.check(server, '0.0.2', 'test/configs/empty.json');
 	});
 	it('should update the version document after the consecutive run', function (done) {
 		db.get('convey-version', function (e, doc) {
@@ -255,12 +293,12 @@ describe('version awareness', function () {
 		convey.on('resource:stale', function () {
 			stale++;
 		});
-		convey.on('done', function () {
+		convey.check(server, '0.0.1', 'test/configs/empty.json', function (e) {
+			if (e) return done(e);
 			assert.equal(fresh, 1);
 			assert.equal(stale, 0);
 			done();
 		});
-		convey.check(server, '0.0.1', 'test/configs/empty.json');
 	});
 });
 /*
@@ -284,7 +322,8 @@ describe('designs', function () {
 	
 	it('should be published when available', function (done) {
 		convey = new Convey();
-		convey.on('done', function () {
+		convey.check(server, '0.0.1', 'test/configs/single.json', function (e) {
+			if (e) return done(e);
 			db.view('single', 'allTheThings', function (e, body) {
 				if (e) return done(e);
 				assert.equal(body.total_rows, 0);
@@ -294,27 +333,26 @@ describe('designs', function () {
 				});
 			});
 		});
-		convey.check(server, '0.0.1', 'test/configs/single.json');
 	});
 	it('should not be updated if the database is already fresh', function (done) {
 		convey = new Convey();
-		convey.on('done', function () {
+		convey.check(server, '0.0.1', 'test/configs/single.json', function (e) {
+			if (e) return done(e);
 			db.get('_design/single', function (e, design) {
 				assert.equal(design._rev, firstRev);
 				done(e);
 			});
 		});
-		convey.check(server, '0.0.1', 'test/configs/single.json');
 	});
 	it('should be updated silently if the database is not fresh', function (done) {
 		convey = new Convey();
-		convey.on('done', function () {
+		convey.check(server, '0.0.2', 'test/configs/single.json', function (e) {
+			if (e) return done(e);
 			db.get('_design/single', function (e, design) {
 				assert.notEqual(design._rev, firstRev);
 				done(e);
 			});
 		});
-		convey.check(server, '0.0.2', 'test/configs/single.json');
 	});
 });
 /*
@@ -347,7 +385,8 @@ describe('document updates', function () {
 				updates = updates + info.updated;
 				creates = creates + info.created;
 			});
-			convey.on('done', function () {
+			convey.check(server, '0.0.1', 'test/configs/document_updates.json', function (e) {
+				if (e) return done(e);
 				db.get(body.id, function (e, thing) {
 					if (e) return done(e);
 					assert.equal(thing.foo, 'bar');
@@ -366,7 +405,6 @@ describe('document updates', function () {
 					});
 				});
 			});
-			convey.check(server, '0.0.1', 'test/configs/document_updates.json');
 		});
 	});
 	it('should ignore non-matching documents', function (done) {
@@ -375,14 +413,14 @@ describe('document updates', function () {
 			resource: 'cat'
 		}, function (e, body) {
 			if (e) return done(e);
-			convey.on('done', function () {
+			convey.check(server, '0.0.2', 'test/configs/document_updates.json', function (e) {
+				if (e) return done(e);
 				db.get(body.id, function (e, cat) {
 					if (e) return done(e);
 					assert.equal(typeof cat.foo, 'undefined');
 					db.destroy(cat._id, cat._rev, done);
 				});
 			});
-			convey.check(server, '0.0.2', 'test/configs/document_updates.json');
 		});
 	});
 });
@@ -410,25 +448,25 @@ describe('custom properties on convey-version document', function () {
 				versions: 'override this!' // `versions` is a reserved key, the next test ensures this custom key is overridden
 			}
 		});
-		convey.on('done', function () {
+		convey.check(server, '0.0.1', 'test/configs/custom_properties.json', function (e) {
+			if (e) return done(e);
 			db.get('convey-version', function (e, doc) {
 				if (e) return done(e);
 				assert.equal(doc.happyTimeCustomKey, 'woot-worthy!');
 				done();
 			});
 		});
-		convey.check(server, '0.0.1', 'test/configs/custom_properties.json');
 	});
 	it('should not override built-in properties', function (done) {
 		convey = new Convey();
-		convey.on('done', function () {
+		convey.check(server, '0.0.2', 'test/configs/custom_properties.json', function (e) {
+			if (e) return done(e);
 			db.get('convey-version', function (e, doc) {
 				if (e) return done(e);
 				assert.notEqual(doc.versions, 'override this!');
 				db.destroy(doc._id, doc._rev, done);
 			});
 		});
-		convey.check(server, '0.0.2', 'test/configs/custom_properties.json');
 	});
 });
 /*
@@ -503,7 +541,9 @@ describe('target databases derived from views', function () {
 			assert.equal(info.resource, 'sub-databases');
 		}).on('database:done', function (info) {
 			assert.equal(info.database, 'test-convey-from-view');
-		}).on('done', function () {
+		});
+		convey.check(server, '0.0.1', 'test/configs/from_view.json', function (e) {
+			if (e) return done(e);
 			// Design is now published for getting sub-dbs by view.
 			db.view('dbs', 'allById', function (e, body) {
 				if (e) return done(e);
@@ -525,7 +565,7 @@ describe('target databases derived from views', function () {
 					], next);
 				}, function (e) {
 					if (e) return done(e);
-					convey = new Convey();
+					convey.removeAllListeners(); // Drop the listeners from above.
 					convey.on('target:done', function (info) {
 						/*
 							This event should be fired 4 times, twice for each database,
@@ -541,7 +581,8 @@ describe('target databases derived from views', function () {
 							events[info.database].updated = events[info.database].updated + info.updated;
 						}
 					});
-					convey.on('done', function () {
+					convey.check(server, '0.0.1', 'test/configs/from_view_subs.json', function (e) {
+						if (e) return done(e);
 						// Verify documents were updated as intended.
 						async.forEachSeries(body.rows, function (row, next) {
 							// Each database should have seen 0 creates.
@@ -564,10 +605,8 @@ describe('target databases derived from views', function () {
 							});
 						}, done);
 					});
-					convey.check(server, '0.0.1', 'test/configs/from_view_subs.json');
 				});
 			});
 		});
-		convey.check(server, '0.0.1', 'test/configs/from_view.json');
 	});
 });
