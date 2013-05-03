@@ -1,3 +1,7 @@
+## 0.2.2 - 2013-05-03
+
+* fix _rev being added to design documents at design update time. closes #1
+
 ## 0.2.1 - 2013-04-05
 
 * accept a callback on check(), making event listeners entirely optional
