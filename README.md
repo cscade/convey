@@ -235,6 +235,10 @@ Database level events refer to the database at the top level of your configurati
 
 * `info.database`: The name of the database work has just completed on.
 
+#### database:missing(info)
+
+* `info.database`: The name of the database that did not exist in couch.
+
 ### Resource level events
 
 Resource level events refer to the second level of your configuration file, your arbitrary resource names within a database.
