@@ -1,3 +1,10 @@
+## 1.0.0 - 2013-08-19
+
+* changed
+	* missing target databases will no longer cause an error to be emitted or returned
+* added
+	* new event `database:missing` fired when a target database does not exist
+
 ## 0.2.2 - 2013-05-03
 
 * fix _rev being added to design documents at design update time. closes #1
