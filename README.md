@@ -189,7 +189,7 @@ convey = new Convey(options);
 The check method is your primary interaction point with convey. Call it whenever you want a full check of all configured databases to occur, typically on each application startup.
 
 * `couch` - mixed. The connection information for [nano](https://github.com/dscape/nano). Anything you could normally pass to `require('nano')(...)`
-* `version` - String. The version number to update all configured databases to.
+* `version` - String. The semver version number to update all configured databases to.
 * `config` - String. Configuration file location, relative to `process.cwd()`.
 * `force` - Boolean. Force all resources in all configured databases to be "stale", regardless of their last checked version.
 	* This option is useful in development, when your designs are changing often and you went to keep them up to date with each application restart.
@@ -221,7 +221,8 @@ Fires once, before any work is performed.
 
 Fires once, when convey is done with all resources.
 
-* `info.duration`: The total execution time, in seconds.
+* `info.duration`: The total execution time, as floor(seconds).
+* `info.ms`: The total execution time, as floor(milliseconds).
 
 ### Database level events
 

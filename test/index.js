@@ -207,6 +207,15 @@ describe('Errors', function () {
 			});
 		});
 	});
+	it('should be generated when version number is invalid', function (done) {
+		var convey = new Convey();
+		
+		convey.check(server, 'foo-1.0.0', 'test/configs/single.json', function (e) {
+			assert.equal(e.name, 'Error');
+			assert.equal(e.message, 'a valid version number must be supplied in `semver` format');
+			done();
+		});
+	});
 });
 /*
 	Version document creation.
