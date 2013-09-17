@@ -1,3 +1,9 @@
+## 1.1.0 2013-09-17
+
+* added
+	* `done` event contains new `ms` property, for milliseconds of execution time
+	* an error event will be generated if the application version number provided to `check()` is not a valid semver
+
 ## 1.0.0 - 2013-08-19
 
 * changed
