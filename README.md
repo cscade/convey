@@ -12,9 +12,9 @@ And, convey is not opinionated. It will do as little, or as much, as you want it
 
 The actions convey can perform for you currently include;
 
-* Publish new designs.
-* Upgrade/modify existing documents based on any criteria you define.
-* Create new documents, derived from existing documents or stand-alone.
+* Publish new designs including views, validation - anything couch understands.
+* Upgrade and modify existing documents based on any criteria you define.
+* Create new documents derived from an existing document.
 
 Database layout can be fixed (known), or defined at runtime based on application parameters. Whether you know that your database is called `my_db`, or you have hundreds of databases with application-defined names, convey can handle them all.
 
