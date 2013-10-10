@@ -2,19 +2,23 @@
 
 [![Build Status](https://travis-ci.org/cscade/convey.png?branch=develop)](https://travis-ci.org/cscade/convey)
 
-Convey can greatly simplify the transition & upgrade of your app's CouchDB designs and documents when your release version changes.
+When your views, validation, or document models change, convey will perform those updates in CouchDB for you, and upgrade any existing documents to keep them in property-sync with new documents.
 
-A new version of your production app will often bring with it new features, new validation, document structure changes, etc. One way to handle document structure changes is to perform checks within any code that may use a given document resource, to see what "version" it is and adjust as needed. While that may work in a pinch, it rapidly gets messy - and are you sure you got every case everywhere in your app? Furthermore, how will you know when all your documents have been updated and your "upgrade" code is no longer needed?
+No more checks in response code to see if a document contains a property that was added along the release trail. No more manually updating couch-level validation functions to match your new models. No more manually pushing new or changed views.
 
-With convey, you can define arbitrary actions to take place within your CouchDB databases when each new version of your app is deployed. These include;
+Convey automates the transition & upgrade of your app's CouchDB designs, validation, and documents. Just restart your app, and you're done.
+
+And, convey is not opinionated. It will do as little, or as much, as you want it to do, so you don't need to worry about expensive view rebuilds or other "magic" actions that heavier, ODM-type libraries impose.
+
+The actions convey can perform for you currently include;
 
 * Publish new designs.
-* "Upgrade" existing documents based on any criteria you define.
+* Upgrade/modify existing documents based on any criteria you define.
 * Create new documents, derived from existing documents or stand-alone.
 
-Have an advanced couchdb database structure with database names defined at runtime? Convey can handle those too.
+Database layout can be fixed (known), or defined at runtime based on application parameters. Whether you know that your database is called `my_db`, or you have hundreds of databases with application-defined names, convey can handle them all.
 
-Relax, and convey your updates the first time.
+In complex, runtime defined database situations, all convey needs is a view to query for the database names to act on. If you have a runtime-defined database application, you probably already have that view.
 
 ## Installation
 
@@ -28,7 +32,7 @@ npm install --save convey
 
 Convey will publish, update, and create couch designs and userland documents based on the configuration you provide.
 
-Convey stores a single `convey-version` document in each top-level database it is configured to watch, and will only perform actions if the version your provide has changed since it was last run. Update passes can also be "forced" (see options section below).
+Convey stores a single `convey-version` document in each top-level database it is configured to watch, and will only perform actions if the application version (or any version number you provide instead) has changed since it was last run. Update passes can also be "forced", useful for development environments where views are changing frequently (see options section below).
 
 ### A basic json configuration file
 
